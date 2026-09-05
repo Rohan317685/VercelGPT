@@ -25,3 +25,54 @@ class SelfAttention(nn.module):
         B, T, C = x.shape
         q, k, v = self.qkv(x).split(n_embd, dim=2)
         q = q.view(B, T, n_head, C // n_head).transpose(1, 2)
+        k = k.view(B, T, n_head, C // n_head).transpose(1, 2)
+        v = v.view(B, T, n_head, C // n_head).transpose(1, 2)
+
+        att = (q @ k.transpose(-2, 1)) / math.sqrt(k.size(-1))
+        att = att.masked_fill(self.mask[:T, :T] == 0, float("-inf"))
+        att = self.drop(F.softmax(att, dim=-1))
+
+        out = (att @ v).transpose(1, 2).continguouse().view(B, T, C)
+        return self.drop(self.proj(out))
+
+class Block(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
+
+        self.attn = SelfAttention()
+
+        self.mlp = nn.Sequential(
+            nn.Linear(n_embd, 4 * n_embd), 
+            nn.GELU(),
+
+            nn.Linear(4 * n_embd, n_embd),
+            nn.Dropout(dropout),
+        )
+
+
+    def forward(self, x):
+
+        x = x + self.attn(self.ln1(x))
+        x = x + self.mlp(self.ln2(x))
+
+        return x 
+
+class GPT(nn.Module):
+
+    def __init__(self):
+        super()__init__()
+
+        self.tok_emb = nn.Embedding(vocab_size, n_embd)
+        self.pos_emb = nn.Embedding(block_size, n_embd)
+        self.drop = nn.Dropout(dropout)
+        self.blocks = nn.ModuleList(Block() for _ in range(n_layer))
+        self.ln_f = nn.LayerNorm(n_embd)
+
+        self.head = nn.Linear(n_embd, vocab_size, bias=False)
+        self.head.weight = self.tok_emb.weight
+        
+        self.apply(self._init)
