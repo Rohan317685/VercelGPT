@@ -11,12 +11,12 @@ n_layer = 4
 dropout = 0.1
 
 
-class SelfAttention(nn.module):
+class SelfAttention(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.qkv = nn.linear(n_embd, 3 * n_embd, bias=False)
-        self.proj = nn.linear(n_embd, n_embd, bias=False)
+        self.qkv = nn.Linear(n_embd, 3 * n_embd, bias=False)
+        self.proj = nn.Linear(n_embd, n_embd, bias=False)
         self.drop = nn.Dropout(dropout)
         
         self.register_buffer("mask", torch.tril(torch.ones(block_size, block_size)))
@@ -28,11 +28,11 @@ class SelfAttention(nn.module):
         k = k.view(B, T, n_head, C // n_head).transpose(1, 2)
         v = v.view(B, T, n_head, C // n_head).transpose(1, 2)
 
-        att = (q @ k.transpose(-2, 1)) / math.sqrt(k.size(-1))
+        att = (q @ k.transpose(-2, -1)) / math.sqrt(k.size(-1))
         att = att.masked_fill(self.mask[:T, :T] == 0, float("-inf"))
         att = self.drop(F.softmax(att, dim=-1))
 
-        out = (att @ v).transpose(1, 2).continguouse().view(B, T, C)
+        out = (att @ v).transpose(1, 2).contiguous()().view(B, T, C)
         return self.drop(self.proj(out))
 
 class Block(nn.Module):
@@ -64,7 +64,7 @@ class Block(nn.Module):
 class GPT(nn.Module):
 
     def __init__(self):
-        super()__init__()
+        super().__init__()
 
         self.tok_emb = nn.Embedding(vocab_size, n_embd)
         self.pos_emb = nn.Embedding(block_size, n_embd)
@@ -77,44 +77,19 @@ class GPT(nn.Module):
         
         self.apply(self._init)
 
-@staticmethod
-def _init(m):
-    if isinstance(m, (nn.Linear, nn.Embedding)):
-        nn.init.normal_(m.weight, mean=0.0, std=0.02)
-        if isinstance(m, nn.Linear) and m.bias is not None:
-            nn.init.zeros_(m_bias)
 
-def forward(self, idx, targets=None): 
+        @staticmethod
+        def _init(m):
+            if isinstance(m, (nn.Linear, nn.Embedding)):
 
-    x = x + self.attn(self.ln1(x))
-    x = x + self.mlp(self.ln2(x))
-    return x
-
-class GPT(nn.Module):
-    
-    def __init__(self):
-        super().__init__()
-        self.tok_emb = nn.Embedding(vocab_size, n_embd)
-        self.pos_emb = nn.Embedding(block_size, n_embd)
-        self.drop = nn.Dropout(dropout)
-        self.blocks = nn.ModuleList(block() for _ in range(n_layer))
-        self.ln_f = nn.LayerNorm(n_embd)
-        self.head = nn.Linear(n_embd, vocab_size, bias=False)
-        self.head.weight = self.tok_emb.weight
-        self.apply(self._init)
-
-@static method 
-def _init(m):
-    if isinstance(m, (nn.Linear, nn.Embedding)):
-        nn.init.normal_(m.weight, mean=0.0 std=0.02)
-
-        if isinstance(n, nn.Linear) and m.bias is not None:
-            nn.init.zeros_(m.bias)
+                nn.init.normal_(m.weight, mean=0.0, std=0.02)
+                if isinstance(m, nn.Linear) and m.bias is not None:
+                    nn.init.zeros_(m.bias)
 
 def forward(self, idx, targets=None):
 
     B, T = idx.shape
-    pos = torch.range(T, device=idx.device)
+    pos = torch.arange(T, device=idx.device)
     x = self.drop(self.tok_emb(idx) + self.pos_emb(pos))
 
     for block in self.blocks:
@@ -135,7 +110,7 @@ def forward(self, idx, targets=None):
 def generate(self, idx, max_new_tokens, temperature = 0.8, top_k=40):
 
     for _ in range(max_new_tokens):
-        idx_cond = idx[:, =block_size:]
+        idx_cond = idx[:, -block_size:]
 
         logits, _ = self (idx_cond)
         logits = logits[:, -1, :] / temperature
