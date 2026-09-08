@@ -2,7 +2,7 @@ import os
 import torch
 
 folder = "vercel_training"
-block_size = 16
+block_size = 128
 batch_size = 32
 
 texts = []
